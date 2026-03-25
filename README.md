@@ -1,16 +1,56 @@
-# React + Vite
+# 📄 Frontend README.md
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+```md
+# AI-Based Resume Screening System (Frontend)
 
-Currently, two official plugins are available:
+## 📌 Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This is the frontend dashboard for the AI-based resume screening system. It allows HR users to upload resumes, view candidate rankings, and manage application statuses.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🚀 Features
 
-## Expanding the ESLint configuration
+- Upload resume with job description
+- View candidates in dashboard
+- Search and filter candidates
+- Score visualization (color-coded)
+- Shortlist / Reject candidates
+- Dashboard stats (total, shortlisted, rejected)
+- Chart visualization using Recharts
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠️ Tech Stack
+
+- React (Vite)
+- Tailwind CSS
+- Axios (API calls)
+- Recharts (charts)
+
+---
+
+## 📂 Project Structure
+
+frontend/
+│── src/
+│ ├── components/
+│ │ └── Dashboard.jsx
+│ ├── App.jsx
+│ ├── main.jsx
+│── index.html
+│── package.json
+
+---
+
+## ⚙️ Installation
+
+### 1. Navigate to frontend
+
+cd frontend
+npm install
+npm install axios recharts
+
+-- Run Frontend
+npm run dev
+```
