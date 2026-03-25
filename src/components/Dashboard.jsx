@@ -50,7 +50,6 @@ const Dashboard = () => {
     fetchCandidates();
   };
 
-  // Stats
   const total = candidates.length;
   const shortlisted = candidates.filter(
     (c) => c.status === "shortlisted",
@@ -64,13 +63,11 @@ const Dashboard = () => {
 
   return (
     <div>
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <span className="text-gray-400">HR Panel</span>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl text-center">
           <p className="text-gray-300">Total</p>
@@ -88,7 +85,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Chart */}
       <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl mb-6">
         <h2 className="mb-4 text-lg">Candidate Overview</h2>
 
@@ -102,15 +98,24 @@ const Dashboard = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Upload */}
       <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl mb-6">
         <h2 className="mb-4 text-lg">Upload Resume</h2>
 
-        <input
-          type="file"
-          className="mb-3"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
+        <label className="flex items-center gap-3 mb-4">
+          <span className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition">
+            Choose File
+          </span>
+
+          <span className="text-gray-300 text-sm">
+            {file ? file.name : "No file selected"}
+          </span>
+
+          <input
+            type="file"
+            className="hidden"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+        </label>
 
         <textarea
           className="w-full bg-transparent border border-gray-600 p-3 rounded mb-3"
