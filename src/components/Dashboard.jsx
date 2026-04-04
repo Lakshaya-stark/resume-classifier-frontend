@@ -7,219 +7,262 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
-const Dashboard = () => {
-  const [candidates, setCandidates] = useState([]);
+const API = "http://127.0.0.1:8000";
+
+export default function Dashboard() {
   const [file, setFile] = useState(null);
-  const [jobDescription, setJobDescription] = useState("");
+  const [jobs, setJobs] = useState([]);
+  const [selectedJob, setSelectedJob] = useState("");
+  const [candidates, setCandidates] = useState([]);
   const [search, setSearch] = useState("");
+  const [customJD, setCustomJD] = useState("");
   const [minScore, setMinScore] = useState(0);
 
+  // ================= FETCH =================
+  const fetchJobs = async () => {
+    const res = await axios.get(`${API}/jobs`);
+    setJobs(res.data);
+  };
+
   const fetchCandidates = async () => {
-    const res = await axios.get("http://127.0.0.1:8000/candidates");
+    if (!selectedJob) return;
+
+    const res = await axios.get(`${API}/candidates?job_id=${selectedJob}`);
     setCandidates(res.data);
   };
 
   useEffect(() => {
-    fetchCandidates();
+    fetchJobs();
   }, []);
 
+  useEffect(() => {
+    fetchCandidates();
+  }, [selectedJob]);
+
+  // ================= UPLOAD =================
   const handleUpload = async () => {
-    if (!file || !jobDescription) {
-      alert("Fill all fields");
+    if (!file || !selectedJob) {
+      alert("Select job and file");
       return;
     }
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("job_description", jobDescription);
+    if (customJD) {
+      formData.append("custom_jd", customJD);
+    } else {
+      formData.append("job_id", selectedJob);
+    }
 
-    await axios.post("http://127.0.0.1:8000/upload-resume/", formData);
-
-    setFile(null);
-    setJobDescription("");
+    await axios.post(`${API}/upload-resume/`, formData);
     fetchCandidates();
   };
 
+  // ================= STATUS =================
   const updateStatus = async (filename, status) => {
-    await axios.put("http://127.0.0.1:8000/update-status", {
-      filename,
-      status,
-    });
-    fetchCandidates();
+    await axios.put(`${API}/update-status`, { filename, status });
+
+    setCandidates((prev) =>
+      prev.map((c) => (c.filename === filename ? { ...c, status } : c)),
+    );
   };
 
-  const total = candidates.length;
+  // ================= FILTERS =================
+  const filteredCandidates = candidates.filter(
+    (c) =>
+      c.filename.toLowerCase().includes(search.toLowerCase()) &&
+      c.match_score >= minScore,
+  );
+
+  // ================= ANALYTICS =================
   const shortlisted = candidates.filter(
     (c) => c.status === "shortlisted",
   ).length;
+
   const rejected = candidates.filter((c) => c.status === "rejected").length;
 
-  const chartData = [
+  const chartData = candidates.map((c) => ({
+    name: c.filename.slice(0, 8),
+    score: c.match_score,
+  }));
+
+  const pieData = [
     { name: "Shortlisted", value: shortlisted },
     { name: "Rejected", value: rejected },
   ];
 
+  const COLORS = ["#22c55e", "#ef4444"];
+
+  const selectedJobData = jobs.find((j) => j._id === selectedJob);
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <span className="text-gray-400">HR Panel</span>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
+      <h1 className="text-4xl font-bold text-center mb-10">
+        AI Resume Screening System
+      </h1>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl text-center">
-          <p className="text-gray-300">Total</p>
-          <h2 className="text-2xl font-bold">{total}</h2>
-        </div>
+      {/* ================= JOB + UPLOAD ================= */}
+      <div className="bg-gray-800 p-6 rounded-xl mb-8">
+        <select
+          className="w-full p-3 mb-4 rounded bg-gray-900 border"
+          value={selectedJob}
+          onChange={(e) => setSelectedJob(e.target.value)}
+        >
+          <option value="">Select Job</option>
+          {jobs.map((job) => (
+            <option key={job._id} value={job._id}>
+              {job.title}
+            </option>
+          ))}
+        </select>
 
-        <div className="bg-green-500/20 backdrop-blur-md p-4 rounded-xl text-center">
-          <p className="text-green-300">Shortlisted</p>
-          <h2 className="text-2xl font-bold">{shortlisted}</h2>
-        </div>
+        {/* 🔥 REQUIRED SKILLS */}
+        {selectedJobData && (
+          <div className="mb-4 text-sm">
+            <span className="text-gray-400">Required Skills: </span>
+            <span className="text-blue-400 font-semibold">
+              {selectedJobData.skills.join(", ")}
+            </span>
+          </div>
+        )}
 
-        <div className="bg-red-500/20 backdrop-blur-md p-4 rounded-xl text-center">
-          <p className="text-red-300">Rejected</p>
-          <h2 className="text-2xl font-bold">{rejected}</h2>
-        </div>
-      </div>
-
-      <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl mb-6">
-        <h2 className="mb-4 text-lg">Candidate Overview</h2>
-
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={chartData}>
-            <XAxis dataKey="name" stroke="#ccc" />
-            <YAxis stroke="#ccc" />
-            <Tooltip />
-            <Bar dataKey="value" fill="#3b82f6" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl mb-6">
-        <h2 className="mb-4 text-lg">Upload Resume</h2>
-
-        <label className="flex items-center gap-3 mb-4">
-          <span className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition">
-            Choose File
-          </span>
-
-          <span className="text-gray-300 text-sm">
-            {file ? file.name : "No file selected"}
-          </span>
-
-          <input
-            type="file"
-            className="hidden"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-        </label>
-
+        <input
+          type="file"
+          className="mb-4"
+          onChange={(e) => setFile(e.target.files[0])}
+        />
         <textarea
-          className="w-full bg-transparent border border-gray-600 p-3 rounded mb-3"
-          placeholder="Enter job description..."
-          value={jobDescription}
-          onChange={(e) => setJobDescription(e.target.value)}
+          placeholder="Or paste custom job description..."
+          className="w-full p-3 mb-4 rounded bg-gray-900 border border-gray-600"
+          onChange={(e) => setCustomJD(e.target.value)}
         />
 
         <button
           onClick={handleUpload}
-          className="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 px-6 py-2 rounded"
         >
           Upload
         </button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white/10 backdrop-blur-md p-6 rounded-xl">
-        <h2 className="mb-4 text-lg">Candidates</h2>
+      {/* ================= FILTERS ================= */}
+      <div className="flex gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by filename..."
+          className="p-2 rounded bg-gray-800 w-1/2"
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-        {/* Filters */}
-        <div className="flex gap-4 mb-4">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="bg-transparent border border-gray-600 p-2 rounded w-1/2"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <input
+          type="number"
+          placeholder="Min Score"
+          className="p-2 rounded bg-gray-800"
+          onChange={(e) => setMinScore(Number(e.target.value))}
+        />
+      </div>
 
-          <input
-            type="number"
-            placeholder="Min Score"
-            className="bg-transparent border border-gray-600 p-2 rounded w-1/4"
-            value={minScore}
-            onChange={(e) => setMinScore(Number(e.target.value))}
-          />
+      {/* ================= ANALYTICS ================= */}
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        {/* BAR CHART */}
+        <div className="bg-gray-800 p-4 rounded-xl">
+          <h2 className="mb-4">Scores</h2>
+
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={chartData}>
+              <XAxis dataKey="name" stroke="#ccc" />
+              <YAxis stroke="#ccc" />
+              <Tooltip />
+              <Bar dataKey="score" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
-        <table className="w-full text-gray-200">
+        {/* PIE CHART */}
+        <div className="bg-gray-800 p-4 rounded-xl">
+          <h2 className="mb-4">Status Distribution</h2>
+
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={pieData} dataKey="value" outerRadius={80} label>
+                {pieData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ================= TABLE ================= */}
+      <div className="bg-gray-800 p-6 rounded-xl">
+        <h2 className="mb-4 text-xl">Candidates</h2>
+
+        <table className="w-full">
           <thead>
-            <tr className="bg-white/10">
+            <tr className="text-gray-400 border-b border-gray-700">
               <th className="p-2">Filename</th>
-              <th className="p-2">Skills</th>
-              <th className="p-2">Score</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">Actions</th>
+              <th>Skills</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Resume</th>
+              <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {candidates
-              .filter(
-                (c) =>
-                  c.filename.toLowerCase().includes(search.toLowerCase()) &&
-                  c.match_score >= minScore,
-              )
-              .map((c, i) => (
-                <tr
-                  key={i}
-                  className="border-t border-gray-700 hover:bg-white/5"
-                >
-                  <td className="p-2">{c.filename}</td>
+            {filteredCandidates.map((c, i) => (
+              <tr key={i} className="border-b border-gray-700">
+                <td className="p-2">{c.filename}</td>
 
-                  <td className="p-2">{c.skills.join(", ")}</td>
+                <td>{c.skills.join(", ")}</td>
 
-                  <td className="p-2">
-                    <span
-                      className={`px-3 py-1 rounded text-white ${
-                        c.match_score >= 70
-                          ? "bg-green-500"
-                          : c.match_score >= 50
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                      }`}
-                    >
-                      {c.match_score}%
-                    </span>
-                  </td>
+                <td>
+                  <span className="bg-blue-600 px-2 py-1 rounded">
+                    {c.match_score}%
+                  </span>
+                </td>
 
-                  <td className="p-2">{c.status || "pending"}</td>
+                <td>{c.status || "pending"}</td>
 
-                  <td className="p-2 space-x-2">
-                    <button
-                      onClick={() => updateStatus(c.filename, "shortlisted")}
-                      className="bg-green-500 px-3 py-1 rounded hover:bg-green-600"
-                    >
-                      Shortlist
-                    </button>
+                {/* 🔥 RESUME PREVIEW */}
+                <td>
+                  <a
+                    href={`${API}/${c.file_path}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-400 underline"
+                  >
+                    View
+                  </a>
+                </td>
 
-                    <button
-                      onClick={() => updateStatus(c.filename, "rejected")}
-                      className="bg-red-500 px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      Reject
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                <td className="space-x-2">
+                  <button
+                    onClick={() => updateStatus(c.filename, "shortlisted")}
+                    className="bg-green-600 px-2 py-1 rounded"
+                  >
+                    Shortlist
+                  </button>
+
+                  <button
+                    onClick={() => updateStatus(c.filename, "rejected")}
+                    className="bg-red-600 px-2 py-1 rounded"
+                  >
+                    Reject
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
