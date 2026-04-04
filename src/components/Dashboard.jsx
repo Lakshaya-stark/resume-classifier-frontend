@@ -17,9 +17,7 @@ const Dashboard = () => {
   const [minScore, setMinScore] = useState(0);
 
   const fetchCandidates = async () => {
-    const res = await axios.get(
-      "https://resume-backend-hfcm.onrender.com/candidates",
-    );
+    const res = await axios.get("http://127.0.0.1:8000/candidates");
     setCandidates(res.data);
   };
 
@@ -37,10 +35,7 @@ const Dashboard = () => {
     formData.append("file", file);
     formData.append("job_description", jobDescription);
 
-    await axios.post(
-      "https://resume-backend-hfcm.onrender.com/upload-resume/",
-      formData,
-    );
+    await axios.post("http://127.0.0.1:8000/upload-resume/", formData);
 
     setFile(null);
     setJobDescription("");
@@ -48,7 +43,7 @@ const Dashboard = () => {
   };
 
   const updateStatus = async (filename, status) => {
-    await axios.put("https://resume-backend-hfcm.onrender.com/update-status", {
+    await axios.put("http://127.0.0.1:8000/update-status", {
       filename,
       status,
     });
