@@ -46,16 +46,21 @@ export default function Dashboard() {
 
   // ================= UPLOAD =================
   const handleUpload = async () => {
-    if (!file || !selectedJob) {
-      alert("Select job and file");
+    if (!file) {
+      alert("Select file");
       return;
     }
 
     const formData = new FormData();
     formData.append("file", file);
+
     if (customJD) {
       formData.append("custom_jd", customJD);
     } else {
+      if (!selectedJob) {
+        alert("Select job or enter custom JD");
+        return;
+      }
       formData.append("job_id", selectedJob);
     }
 
@@ -72,7 +77,21 @@ export default function Dashboard() {
     );
   };
 
-  // ================= FILTERS =================
+  // ================= DELETE =================
+  const handleDelete = async (filename) => {
+    const confirmDelete = window.confirm("Delete this resume?");
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`${API}/delete-candidate/${filename}`);
+
+      setCandidates((prev) => prev.filter((c) => c.filename !== filename));
+    } catch (error) {
+      console.error("Delete error:", error);
+    }
+  };
+
+  // ================= FILTER =================
   const filteredCandidates = candidates.filter(
     (c) =>
       c.filename.toLowerCase().includes(search.toLowerCase()) &&
@@ -121,7 +140,7 @@ export default function Dashboard() {
           ))}
         </select>
 
-        {/* 🔥 REQUIRED SKILLS */}
+        {/* REQUIRED SKILLS */}
         {selectedJobData && (
           <div className="mb-4 text-sm">
             <span className="text-gray-400">Required Skills: </span>
@@ -131,11 +150,13 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* FILE INPUT FIXED */}
         <input
           type="file"
-          className="mb-4"
+          className="mb-4 bg-gray-700 p-2 rounded cursor-pointer"
           onChange={(e) => setFile(e.target.files[0])}
         />
+
         <textarea
           placeholder="Or paste custom job description..."
           className="w-full p-3 mb-4 rounded bg-gray-900 border border-gray-600"
@@ -144,13 +165,13 @@ export default function Dashboard() {
 
         <button
           onClick={handleUpload}
-          className="bg-blue-600 px-6 py-2 rounded"
+          className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded"
         >
           Upload
         </button>
       </div>
 
-      {/* ================= FILTERS ================= */}
+      {/* ================= FILTER ================= */}
       <div className="flex gap-4 mb-6">
         <input
           type="text"
@@ -169,7 +190,6 @@ export default function Dashboard() {
 
       {/* ================= ANALYTICS ================= */}
       <div className="grid grid-cols-2 gap-6 mb-8">
-        {/* BAR CHART */}
         <div className="bg-gray-800 p-4 rounded-xl">
           <h2 className="mb-4">Scores</h2>
 
@@ -183,7 +203,6 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* PIE CHART */}
         <div className="bg-gray-800 p-4 rounded-xl">
           <h2 className="mb-4">Status Distribution</h2>
 
@@ -231,7 +250,6 @@ export default function Dashboard() {
 
                 <td>{c.status || "pending"}</td>
 
-                {/* 🔥 RESUME PREVIEW */}
                 <td>
                   <a
                     href={`${API}/${c.file_path}`}
@@ -256,6 +274,14 @@ export default function Dashboard() {
                     className="bg-red-600 px-2 py-1 rounded"
                   >
                     Reject
+                  </button>
+
+                  {/* 🔥 DELETE BUTTON */}
+                  <button
+                    onClick={() => handleDelete(c.filename)}
+                    className="bg-red-800 hover:bg-red-900 px-2 py-1 rounded"
+                  >
+                    Delete
                   </button>
                 </td>
               </tr>
